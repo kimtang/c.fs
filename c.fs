@@ -446,7 +446,7 @@ type deserialize(s:System.Net.Sockets.NetworkStream) =
         | -12 -> rj() |> fun x -> if x<0L then (x+1L)/100L - 1L else x / 100L
                       |> fun x-> Timestamp(new DateTime(x + o))
         | -13 -> let r = ri()
-                 Month(new DateTime(2000 + r /12,1+r % 12,1))
+                 Month ((new DateTime(2000,1,1)).AddMonths(r))
         | -14 -> ri() |> ktofDate |> fun x -> Date(x)
         | -15 -> DateTime(System.DateTime.FromOADate(rf() + odate))
         | -16 -> rj() |> fun x -> KTimespan(new System.TimeSpan(x / 100L))
@@ -484,7 +484,7 @@ type deserialize(s:System.Net.Sockets.NetworkStream) =
         | 13 -> jp()
                 (fun i -> ri()) 
                 |> Array.init (ri()) 
-                |> Array.map (fun x -> new DateTime(2000 + x /12,1+x % 12,1) )
+                |> Array.map (fun x -> (new DateTime(2000,1,1)).AddMonths(x))
                 |> (fun x -> AMonth(x))
         | 14 -> jp();ADate( (fun i -> ri()) |> Array.init (ri()) |> Array.map ktofDate )
         | 15 -> jp()
