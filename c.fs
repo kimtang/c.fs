@@ -10,6 +10,7 @@ exception KException of string
 // 2014.09.08 DONE: TODO: Add Exception Support
 // 2014.09.08 DONE: TODO: Add maxbuffer size support
 // 2014.09.08 DONE: Add Guid support
+// 2020.04.09 DONE: Fixed month nan 
 // TODO: extend qn function
 
 // 06.09.2014: Position Bug fixed
@@ -168,6 +169,51 @@ let t(k:KObject) =
     | ERROR -> raise (KException("ERROR in t"))
     | TODO -> raise (KException("TODO in t"))
     | NULL -> raise (KException("NULL in t"))
+
+let rec n(k:KObject) = 
+    match k with
+    | Bool(_) -> 1 
+    | Guid(_) -> 1 
+    | Byte(_) -> 1 
+    | Short(_) -> 1 
+    | Int(_) -> 1 
+    | Long(_) -> 1 
+    | Real(_) -> 1 
+    | Float(_) -> 1 
+    | Char(_) -> 1 
+    | String(_) -> 1
+    | Timestamp(_) -> 1
+    | Month(_) -> 1
+    | Date(_) -> 1
+    | DateTime(_) -> 1
+    | KTimespan(_) -> 1
+    | Minute(_) -> 1
+    | Second(_) -> 1
+    | TimeSpan(_) -> 1
+    | ABool(x) -> Array.length x
+    | AGuid(x) -> Array.length x
+    | AByte(x) -> Array.length x
+    | AShort(x) -> Array.length x
+    | AInt(x) -> Array.length x
+    | ALong(x) -> Array.length x
+    | AReal(x) -> Array.length x
+    | AFloat(x) -> Array.length x
+    | AChar(x) -> Array.length x
+    | AString(x) -> Array.length x
+    | ATimestamp(x) -> Array.length x 
+    | AMonth(x) -> Array.length x
+    | ADate(x) -> Array.length x
+    | ADateTime(x) -> Array.length x  
+    | AKTimespan(x) -> Array.length x
+    | AMinute(x) -> Array.length x
+    | ASecond(x) -> Array.length x
+    | ATimeSpan(x) -> Array.length x
+    | Flip(x,y) -> n y.[0]
+    | Dict(x,y) -> n x
+    | AKObject (x) -> List.length x
+    | ERROR -> raise (KException("ERROR in n"))
+    | TODO -> raise (KException("TODO in n"))
+    | NULL -> raise (KException("NULL in n"))
 
 let ns(s:string) = 
     let i = s.IndexOf('\000')
@@ -446,9 +492,17 @@ type deserialize(s:System.Net.Sockets.NetworkStream) =
         | -12 -> rj() |> fun x -> if x<0L then (x+1L)/100L - 1L else x / 100L
                       |> fun x-> Timestamp(new DateTime(x + o))
         | -13 -> let r = ri()
-                 Month ((new DateTime(2000,1,1)).AddMonths(r))
+                 match -120000 < r && r < 120000  with
+                 | true ->  Month ((new DateTime(2000,1,1)).AddMonths(r))
+                 | false -> Month (DateTime.MinValue)
+                 //Month ((new DateTime(2000,1,1)).AddMonths(r))
         | -14 -> ri() |> ktofDate |> fun x -> Date(x)
-        | -15 -> DateTime(System.DateTime.FromOADate(rf() + odate))
+        | -15 -> let r = rf()
+                 match System.Double.IsNaN r with
+                 | true -> DateTime(DateTime.MinValue)
+                 | false -> DateTime(System.DateTime.FromOADate(r + odate))
+
+                 // DateTime(System.DateTime.FromOADate(rf() + odate))
         | -16 -> rj() |> fun x -> KTimespan(new System.TimeSpan(x / 100L))
         | -17 -> let r = ri()
                  Minute(new System.TimeSpan(r /60,r%60,0))
@@ -481,15 +535,24 @@ type deserialize(s:System.Net.Sockets.NetworkStream) =
                 |> Array.map (fun x -> if x<0L then (x+1L)/100L - 1L else x / 100L )
                 |> Array.map (fun x -> new DateTime(x + o) )
                 |> (fun x -> ATimestamp(x))
+
         | 13 -> jp()
                 (fun i -> ri()) 
                 |> Array.init (ri()) 
-                |> Array.map (fun x -> (new DateTime(2000,1,1)).AddMonths(x))
+                |> Array.map (fun r -> match -120000 < r && r < 120000  with
+                                       | true ->  (new DateTime(2000,1,1)).AddMonths(r)
+                                       | false -> DateTime.MinValue)
+
                 |> (fun x -> AMonth(x))
+
         | 14 -> jp();ADate( (fun i -> ri()) |> Array.init (ri()) |> Array.map ktofDate )
+        
         | 15 -> jp()
                 (fun i -> rf()) |> Array.init (ri()) 
-                                |> Array.map (fun x-> System.DateTime.FromOADate(x + odate))
+                                |> Array.map (fun r -> match System.Double.IsNaN r with
+                                                       | true -> DateTime.MinValue
+                                                       | false -> System.DateTime.FromOADate(r + odate)
+                                                       ) 
                                 |> (fun x->ADateTime(x))
         | 16 -> jp()
                 (fun i -> rj()) |> Array.init (ri())
@@ -536,18 +599,25 @@ type c(h:string,p:int,u:string,maxBufferSize:int) =
         3 |> byte |> min b.[0] |> int
     let d = deserialize(s)
 
+    member o.k() = d.k()
     member o.k(x:KObject) = x |> serialize.wi(1,vt) |> fun x -> s.Write(x,0,x.Length)
                             d.k() 
     member o.k(s:string) = AChar(s.ToCharArray()) |> o.k
     member o.k(s:string,k:KObject)  = AKObject([AChar(s.ToCharArray());k]) |> o.k
     member o.k(s:string,k1:KObject,k2:KObject)  = AKObject([AChar(s.ToCharArray());k1;k2]) |> o.k
     member o.k(s:string,k1:KObject,k2:KObject,k3:KObject)  = AKObject([AChar(s.ToCharArray());k1;k2;k3]) |> o.k
+    member o.k(s:string,k1:KObject,k2:KObject,k3:KObject,k4:KObject)  = AKObject([AChar(s.ToCharArray());k1;k2;k3;k4]) |> o.k
+    member o.k(s:string,k1:KObject,k2:KObject,k3:KObject,k4:KObject,k5:KObject)  = AKObject([AChar(s.ToCharArray());k1;k2;k3;k4;k5]) |> o.k
+    member o.k(s:string,k1:KObject,k2:KObject,k3:KObject,k4:KObject,k5:KObject,k6:KObject)  = AKObject([AChar(s.ToCharArray());k1;k2;k3;k4;k5;k6]) |> o.k
 
     member o.ks(x:KObject) = x |> serialize.wi(0,vt) |> fun x -> s.Write(x,0,x.Length)
     member o.ks(str:string) = AChar(str.ToCharArray()) |> o.ks
     member o.ks(s:string,x:KObject) = AKObject([AChar(s.ToCharArray());x])  |> o.ks
     member o.ks(s:string,x:KObject,y:KObject) = AKObject([AChar(s.ToCharArray());x;y])  |> o.ks
     member o.ks(s:string,x:KObject,y:KObject,z:KObject) = AKObject([AChar(s.ToCharArray());x;y;z])  |> o.ks
+    member o.ks(s:string,x:KObject,y:KObject,z:KObject,a:KObject) = AKObject([AChar(s.ToCharArray());x;y;z;a])  |> o.ks
+    member o.ks(s:string,x:KObject,y:KObject,z:KObject,a:KObject,b:KObject) = AKObject([AChar(s.ToCharArray());x;y;z;a;b])  |> o.ks
+    member o.ks(s:string,x:KObject,y:KObject,z:KObject,a:KObject,b:KObject,c:KObject) = AKObject([AChar(s.ToCharArray());x;y;z;a;b;c])  |> o.ks
 
     new(h:string,p:int) = new c(h,p,"",65536)
     new(h:string,p:int,u:string) = new c(h,p,u,65536)
