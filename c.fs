@@ -261,6 +261,9 @@ let rec nx k =
     | Flip(x,y) -> 3 + nx(AString(x)) + nx(AKObject(y))
     | Dict(x,y) -> 1 + nx(x) + nx(y)
     | AKObject(x) -> x |> List.map nx |> List.fold (+) 6
+    | ERROR -> raise(KException("unknown error"))
+    | NULL -> raise(KException("unknown error"))
+    | TODO -> raise(KException("unknown todo"))
 
 type serialize(n,vt) =
     let mutable j = 0
@@ -340,6 +343,7 @@ type serialize(n,vt) =
         | Flip(y,z) -> x.w(0uy);x.w(99uy);x.w(AString(y)); x.w(AKObject(z));
         | ERROR -> raise(KException("unknown error"))
         | NULL -> raise(KException("unknown error"))
+        | TODO -> raise(KException("unknown todo"))
 
 
     static member wi (i:int,vt) (k:KObject)=
