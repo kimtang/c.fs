@@ -265,6 +265,147 @@ let rec nx k =
     | NULL -> raise(KException("unknown error"))
     | TODO -> raise(KException("unknown todo"))
 
+let rec stringify (r:KObject) = 
+    let abool x =
+        match x with
+        | true -> "1"
+        | false -> "0"
+    match r with
+    | Bool(x) -> match x with
+                    | true -> "1b"
+                    | false -> "0b"
+    | Byte(x) -> x |> string 
+    | Guid(x) -> x |> string
+    | Short(x) -> x |> string
+    | Int(x) -> x |> string
+    | Long(x) -> x |> string
+    | Real(x) -> x |> string
+    | Float(x) -> x |> string
+    | Char(x) -> x |> string
+    | String(x) -> "`"+x 
+    | Date(x) -> x.ToString("yyyy.MM.dd")
+    | Timestamp(x) -> x.ToString("yyyy.MM.ddDHH:mm:ss.ffffzzz")
+    | Minute(x) -> x.ToString("hh\:mm")
+    | Second(x) -> x.ToString("hh\:mm\:ss")
+    | Month(x) -> x.ToString("yyyy.MM")
+    | DateTime(x) -> x.ToString("yyyy.MM.ddDHH:mm:ss.fff")
+    | TimeSpan(x) -> x.ToString("hh\:mm\:ss\.fff")
+    | KTimespan(x) -> x.ToString("hh\:mm\:ss\.fffffff")
+    | AKObject(x) ->
+        match x.Length with
+        | 0 -> "()"
+        | 1 -> "enlist " + stringify x.[0]
+        | _ -> x |> List.map stringify |> List.reduce(fun x y -> x  + ";" + y) |> (fun x -> "(" + x + ")" ) 
+    | ABool(x) ->
+        match x.Length with
+        | 0 -> "`bool$()"
+        | 1 -> "enlist " + (Bool(x.[0]) |> stringify )
+        | _ -> x  |> Array.map abool |> Array.reduce(fun x y -> x + y) |> (fun x -> x + "b" )        
+    | AByte(x) ->
+        match x.Length with
+        | 0 -> "`byte$()"
+        | 1 -> "enlist " + (Byte(x.[0]) |> stringify ) 
+        | _ -> x  |> Array.map string |> Array.reduce(fun x y -> x  + " " + y)
+    | AGuid(x) ->
+        match x.Length with
+        | 0 -> "`guid$()"
+        | 1 -> "enlist " + (Guid(x.[0]) |> stringify )
+        | _ -> x |> Array.map string |> Array.reduce(fun x y -> x  + ";" + y) |> (fun x -> "(" + x + ")" )
+    | AShort(x) ->
+        match x.Length with
+        | 0 -> "`short()"
+        | 1 -> "enlist " + (Short(x.[0]) |> stringify )
+        | _ -> x |> Array.map string |> Array.reduce(fun x y -> x  + " " + y) |> (fun x -> x + "h" ) 
+    | AInt(x) ->
+        match x.Length with
+        | 0 -> "`int()"
+        | 1 -> "enlist " + (Int(x.[0]) |> stringify )
+        | _ -> x |> Array.map string |> Array.reduce(fun x y -> x  + " " + y) |> (fun x -> x + "i")
+    | ALong(x) ->
+        match x.Length with
+        | 0 -> "`long()"
+        | 1 -> "enlist " + (Long(x.[0]) |> stringify )
+        | _ -> x |> Array.map string |> Array.reduce(fun x y -> x  + " " + y) |> (fun x -> x + "j")
+    | AReal(x) ->
+        match x.Length with
+        | 0 -> "`real()"
+        | 1 -> "enlist " + (Real(x.[0]) |> stringify )
+        | _ -> x |> Array.map string |> Array.reduce(fun x y -> x  + " " + y) |> (fun x -> x + "e")
+    | AFloat(x) ->
+        match x.Length with
+        | 0 -> "`float()"
+        | 1 -> "enlist " + (Float(x.[0]) |> stringify )
+        | _ -> x |> Array.map string |> Array.reduce(fun x y -> x  + " " + y) |> (fun x -> x + "f")
+    | AChar(x) ->
+        match x.Length with
+        | 0 -> "`char()"
+        | 1 -> "enlist " + (Char(x.[0]) |> stringify )
+        | _ -> x |> Array.map string |> Array.reduce(fun x y -> x  +  y)|> (fun x -> "\"" + x + "\"" )
+    | AString(x) ->
+        match x.Length with
+        | 0 -> "`$()"
+        | 1 -> "enlist " + (String(x.[0]) |> stringify )
+        | _ -> x |> Array.map (fun x-> "`"+x) |> Array.reduce(fun x y -> x  + y) 
+    | ADate(x) ->
+        match x.Length with
+        | 0 -> "`date$()"
+        | 1 -> "enlist " + (Date(x.[0]) |> stringify )
+        | _ -> x |> Array.map (fun x -> x.ToString("yyyy.MM.dd")) |> Array.reduce(fun x y -> x  + " " + y)
+    | ATimestamp(x) ->
+        match x.Length with
+        | 0 -> "`timestamp$()"
+        | 1 -> "enlist " + (Timestamp(x.[0]) |> stringify )
+        | _ -> x |> Array.map (fun x -> x.ToString("yyyy.MM.ddDHH:mm:ss.ffffzzz")) |> Array.reduce(fun x y -> x  + " " + y)
+    | AMinute(x) ->
+        match x.Length with
+        | 0 -> "`minute$()"
+        | 1 -> "enlist " + (Minute(x.[0]) |> stringify )
+        | _ -> x |> Array.map (fun x -> x.ToString("hh\:mm")) |> Array.reduce(fun x y -> x  + " " + y)
+    | ASecond(x) ->
+        match x.Length with
+        | 0 -> "`second$()"
+        | 1 -> "enlist " + (Second(x.[0]) |> stringify )
+        | _ -> x |> Array.map (fun x -> x.ToString("hh\:mm\:ss")) |> Array.reduce(fun x y -> x  + " " + y)
+    | AMonth(x) ->
+        match x.Length with
+        | 0 -> "`month$()"
+        | 1 -> "enlist " + (Month(x.[0]) |> stringify )
+        | _ -> x |> Array.map (fun x -> x.ToString("yyyy.MM")) |> Array.reduce(fun x y -> x  + " " + y) |> (fun x -> x + "m")
+    | ADateTime(x) ->
+        match x.Length with
+        | 0 -> "`datetime$()"
+        | 1 -> "enlist " + (DateTime(x.[0]) |> stringify )
+        | _ -> x |> Array.map (fun x -> x.ToString("yyyy.MM.ddDHH:mm:ss.fff")) |> Array.reduce(fun x y -> x  + " " + y)
+    | AKTimespan(x) ->
+        match x.Length with
+        | 0 -> "`timespan$()"
+        | 1 -> "enlist " + (KTimespan(x.[0]) |> stringify )
+        | _ -> x |> Array.map (fun x -> x.ToString("hh\:mm\:ss\.fffffff")) |> Array.reduce(fun x y -> x  + " " + y)
+
+    | ATimeSpan(x) ->
+        match x.Length with
+        | 0 -> "`time$()"
+        | 1 -> "enlist " + (TimeSpan(x.[0]) |> stringify )
+        | _ -> x |> Array.map (fun x -> x.ToString("hh\:mm\:ss\.fff")) |> Array.reduce(fun x y -> x  + " " + y)
+    | Dict(x,y) ->
+        let sx = stringify x
+        let sy = stringify y
+        sx + "!" + sy
+    | Flip(x,y) -> 
+        let sx = 
+            match x.Length with
+            | 0 -> "()"
+            | 1 -> "enlist`"+ x.[0]
+            | _ -> x |> Array.map(fun x -> "`"+x) |> Array.reduce(fun x y -> x + y)
+        let sy = 
+            match y.Length with
+            |0 -> ""
+            |1 -> "enlist " + stringify y.[0]
+            |_ -> y |> List.map stringify |> List.reduce(fun x y -> x  + ";" + y) |> (fun x -> "(" + x + ")" )
+        "flip "+sx + "!" + sy
+    | _ -> "nyi" 
+
+
 type serialize(n,vt) =
     let mutable j = 0
     let jp() = j<-j+1
@@ -566,7 +707,7 @@ type deserialize(s:System.Net.Sockets.NetworkStream) =
                 (fun i -> ri()) 
                 |> Array.init (ri()) 
                 |> Array.map (fun x ->  new System.TimeSpan(x /60,x % 60,0) )
-                |> (fun x -> ATimeSpan(x))
+                |> (fun x -> AMinute(x))
         | 18 -> jp()
                 (fun i -> ri()) 
                 |> Array.init (ri()) 
