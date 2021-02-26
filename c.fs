@@ -576,11 +576,9 @@ type deserialize(s:System.Net.Sockets.NetworkStream) =
 
     let u()  =
         let mutable n, r, f, s, p, i = 0,0,0,8,8,0s
+        j <- 0        
+        let dst = ri() |> Array.zeroCreate<byte>        
         let mutable d = j
-
-        j <- 0
-        let dst = ri() |> Array.zeroCreate<byte>
-        
         let aa = Array.zeroCreate<int>(256)
         
         while s < dst.Length do
@@ -603,15 +601,14 @@ type deserialize(s:System.Net.Sockets.NetworkStream) =
                  dst.[s] <- b.[d]
                  s<-s+1;d<-d+1
             while p < s-1 do
-                let t = p
-                p<-p+1
                 aa.[(0xff &&& (int)dst.[p]) ^^^ (0xff &&& (int)dst.[p + 1])] <- p
-            
+                p<-p+1
+
             if (f &&& (int) i) = 0 |> not then
                 s<-s+n
                 p <-s
-                i <- i*2s 
-                if i = 256s then i <- 0s
+            i <- i*2s 
+            if i = 256s then i <- 0s
         b <- dst
         j <- 8
 
